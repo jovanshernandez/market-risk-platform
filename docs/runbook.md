@@ -24,10 +24,9 @@
 
 ## Market Data Provider Failure
 
-This demo uses deterministic sample data. In a live version:
+This project uses deterministic sample data. In a live version:
 
 1. Alert when the last successful ingestion timestamp exceeds the freshness SLO.
 2. Fail closed for trading/risk decisions that require current data.
 3. Serve clearly marked stale data only for read-only dashboards.
 4. Preserve the failed payload and provider response for incident review.
-

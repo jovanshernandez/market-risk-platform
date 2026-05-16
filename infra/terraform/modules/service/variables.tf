@@ -30,7 +30,7 @@ variable "instance_type" {
 
   validation {
     condition     = contains(["t3.micro", "t3.small", "t3.medium"], var.instance_type)
-    error_message = "Use t3.micro, t3.small, or t3.medium for this demo."
+    error_message = "Use t3.micro, t3.small, or t3.medium."
   }
 }
 
@@ -56,4 +56,3 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-

@@ -1,2 +1,1 @@
-"""Market risk platform demo package."""
-
+"""Market risk platform package."""

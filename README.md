@@ -56,7 +56,7 @@ docs/
 
 ## Run Locally
 
-The app is intentionally easy to run on a laptop so reviewers can see the working API without needing AWS credentials.
+The API can be run locally without AWS credentials.
 
 ### 1. Create a virtual environment
 
@@ -132,10 +132,8 @@ terraform validate
 terraform plan -var='ami_id=ami-0123456789abcdef0'
 ```
 
-The production environment includes an S3/DynamoDB remote-state pattern with placeholder names. Replace those before using it outside portfolio review.
+The production environment includes an S3/DynamoDB remote-state pattern with placeholder names. Replace those before using it in a real AWS account.
 
-## Why This Is Financial-Services Relevant
+## Financial-Services Context
 
-Financial firms care less about toy infrastructure and more about whether engineering work is reproducible, controlled, observable, and auditable. This project frames platform engineering around a realistic workload: market-risk calculations that need reliable delivery, change control, operational visibility, and clear failure handling.
-
-The quant math is intentionally approachable. The senior signal is the system around it: CI gates, infrastructure boundaries, documented risk controls, and operations-ready defaults.
+Market-risk workloads require reproducible calculations, controlled releases, auditable infrastructure changes, and clear operational visibility. This project focuses on those platform concerns around a small pricing and portfolio-risk service.
