@@ -1,7 +1,13 @@
 {
+  "uid": "market-risk-overview",
   "title": "Market Risk Platform Overview",
   "schemaVersion": 39,
   "version": 1,
+  "refresh": "15s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
   "panels": [
     {
       "title": "API Availability",

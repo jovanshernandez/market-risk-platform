@@ -159,6 +159,46 @@ Stop the stack:
 docker compose down
 ```
 
+### Native macOS Run
+
+If Docker is not installed, run the services directly with Homebrew:
+
+```bash
+brew install prometheus grafana
+```
+
+Start the API:
+
+```bash
+cd app
+source .venv/bin/activate
+python -m uvicorn market_risk_platform.api:app --host 127.0.0.1 --port 8000
+```
+
+Start Prometheus from the repo root:
+
+```bash
+prometheus \
+  --config.file=observability/prometheus/prometheus.local.yml \
+  --storage.tsdb.path=/tmp/market-risk-prometheus-data \
+  --web.listen-address=127.0.0.1:9090
+```
+
+Start Grafana from the repo root:
+
+```bash
+grafana server \
+  --config /opt/homebrew/etc/grafana/grafana.ini \
+  --homepath /opt/homebrew/opt/grafana/share/grafana \
+  cfg:default.paths.provisioning=$(pwd)/observability/grafana/provisioning-local \
+  cfg:default.paths.data=/tmp/market-risk-grafana-data \
+  cfg:default.paths.logs=/tmp/market-risk-grafana-logs \
+  cfg:server.http_addr=127.0.0.1 \
+  cfg:server.http_port=3000 \
+  cfg:security.admin_user=admin \
+  cfg:security.admin_password=admin
+```
+
 ## Terraform Validation
 
 ```bash

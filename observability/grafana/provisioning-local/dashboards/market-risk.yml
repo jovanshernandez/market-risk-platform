@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Market Risk
+    orgId: 1
+    folder: Market Risk
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /Users/jovan/code/market-risk-platform/observability/grafana/dashboards
