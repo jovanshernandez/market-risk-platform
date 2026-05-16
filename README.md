@@ -1,19 +1,20 @@
 # Market Risk Platform
 
-Production-style platform for running market-data and portfolio-risk workloads.
+Market-risk service with local risk calculations, API access, infrastructure code, and deployment controls.
 
-This project combines quant-adjacent application logic with the platform engineering controls expected in a financial-services environment: tested Python services, containerized delivery, Terraform-managed infrastructure, Jenkins CI/CD, observability artifacts, and operational documentation.
+The repository is organized around a small risk workload and the surrounding platform pieces needed to build, test, deploy, and operate it. The application exposes FX option risk and portfolio-risk calculations through both a CLI and FastAPI service. The infrastructure and CI files show how the service would be packaged, validated, and promoted through controlled environments.
 
-## What This Demonstrates
+## Project Scope
 
-- FX option pricing with Garman-Kohlhagen Greeks
-- Portfolio beta, annualized Sharpe, and Monte Carlo VaR
-- FastAPI service exposing risk workloads and health checks
-- Docker image build for repeatable deployment
-- Terraform module with separate dev and prod environments
-- Jenkins pipeline for tests, image build, Terraform validation, plan artifact capture, and gated production change flow
-- Prometheus/Grafana starter observability assets
-- SRE docs covering architecture, runbooks, security, and tradeoffs
+- Python package for pricing and portfolio-risk calculations
+- FastAPI endpoints for health, metrics, FX option risk, and portfolio risk
+- CLI entry points for running the same workloads locally
+- Unit tests covering the pricing and portfolio modules
+- Dockerfile for packaging the API service
+- Terraform module with separate dev and prod environment definitions
+- Jenkins pipeline for application tests, image build, Terraform validation, and plan capture
+- Prometheus and Grafana configuration for basic service visibility
+- Operational notes for architecture, security, runbooks, SLOs, and tradeoffs
 
 ## Architecture
 
@@ -38,7 +39,7 @@ app/
   tests/                Unit tests for pricing and risk logic
   Dockerfile
 ci/
-  Jenkinsfile           Portfolio-friendly CI/CD pipeline
+  Jenkinsfile           CI/CD pipeline
 infra/
   terraform/
     modules/service/    Reusable AWS service module
