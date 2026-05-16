@@ -1,0 +1,35 @@
+{
+  "title": "Market Risk Platform Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "title": "API Availability",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "up{job=\"market-risk-api\"}"
+        }
+      ]
+    },
+    {
+      "title": "Request Rate",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[5m]))"
+        }
+      ]
+    },
+    {
+      "title": "Risk Job Freshness",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "time() - quant_risk_last_success_timestamp_seconds"
+        }
+      ]
+    }
+  ]
+}
+

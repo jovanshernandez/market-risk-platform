@@ -1,0 +1,82 @@
+pipeline {
+  agent any
+
+  options {
+    ansiColor('xterm')
+    timestamps()
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+  }
+
+  environment {
+    IMAGE_NAME       = 'market-risk-platform'
+    TF_IN_AUTOMATION = 'true'
+  }
+
+  stages {
+    stage('Test application') {
+      steps {
+        dir('app') {
+          sh 'python3 -m venv .venv'
+          sh '.venv/bin/python -m pip install --upgrade pip'
+          sh '.venv/bin/python -m pip install -r requirements.txt'
+          sh '.venv/bin/python -m pytest -q'
+        }
+      }
+    }
+
+    stage('Build container') {
+      steps {
+        sh 'docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} app'
+      }
+    }
+
+    stage('Validate Terraform') {
+      parallel {
+        stage('dev') {
+          steps {
+            dir('infra/terraform/environments/dev') {
+              sh 'terraform fmt -check -recursive ../../..'
+              sh 'terraform init -backend=false -input=false'
+              sh 'terraform validate'
+              sh 'terraform plan -input=false -out=tfplan'
+              sh 'terraform show -no-color tfplan > tfplan.txt'
+            }
+          }
+          post {
+            always {
+              archiveArtifacts artifacts: 'infra/terraform/environments/dev/tfplan.txt', allowEmptyArchive: true, fingerprint: true
+            }
+          }
+        }
+
+        stage('prod') {
+          steps {
+            dir('infra/terraform/environments/prod') {
+              sh 'terraform init -backend=false -input=false'
+              sh 'terraform validate'
+            }
+          }
+        }
+      }
+    }
+
+    stage('Production approval') {
+      when {
+        branch 'main'
+      }
+      steps {
+        timeout(time: 30, unit: 'MINUTES') {
+          input message: 'Apply production infrastructure changes?', ok: 'Apply'
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      cleanWs()
+    }
+  }
+}
+
