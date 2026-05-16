@@ -8,6 +8,10 @@
       "type": "stat",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "up{job=\"market-risk-api\"}"
         }
       ]
@@ -17,7 +21,11 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total[5m]))"
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(market_risk_http_requests_total[5m]))"
         }
       ]
     },
@@ -26,10 +34,13 @@
       "type": "stat",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
           "expr": "time() - quant_risk_last_success_timestamp_seconds"
         }
       ]
     }
   ]
 }
-

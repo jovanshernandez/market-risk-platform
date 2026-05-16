@@ -124,6 +124,41 @@ pytest -q
 uvicorn market_risk_platform.api:app --reload --host 127.0.0.1 --port 8000
 ```
 
+## Run Observability Stack
+
+The local Docker Compose stack starts the API, Prometheus, and Grafana together.
+
+```bash
+docker compose up --build
+```
+
+Open:
+
+- API docs: `http://127.0.0.1:8000/docs`
+- Prometheus: `http://127.0.0.1:9090`
+- Grafana: `http://127.0.0.1:3000`
+
+Grafana credentials:
+
+```text
+username: admin
+password: admin
+```
+
+The Grafana datasource and `Market Risk Platform Overview` dashboard are provisioned automatically. Generate a little traffic before checking the request-rate panel:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/risk/fx-options
+curl http://127.0.0.1:8000/risk/portfolio
+```
+
+Stop the stack:
+
+```bash
+docker compose down
+```
+
 ## Terraform Validation
 
 ```bash

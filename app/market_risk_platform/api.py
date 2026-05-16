@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import time
+from collections import Counter
 from typing import Any
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, Response
 
 from market_risk_platform.cli import build_portfolio_risk
 from market_risk_platform.pricing import price_fx_option
@@ -16,6 +17,14 @@ app = FastAPI(
 )
 
 START_TIME = time.time()
+REQUEST_COUNTS: Counter[tuple[str, str, int]] = Counter()
+
+
+@app.middleware("http")
+async def count_requests(request: Request, call_next):
+    response = await call_next(request)
+    REQUEST_COUNTS[(request.method, request.url.path, response.status_code)] += 1
+    return response
 
 
 @app.get("/health")
@@ -25,17 +34,26 @@ def health() -> dict[str, str]:
 
 @app.get("/metrics")
 def metrics() -> Response:
-    body = "\n".join(
+    lines = [
+        "# HELP market_risk_platform_up API process health.",
+        "# TYPE market_risk_platform_up gauge",
+        "market_risk_platform_up 1",
+        "# HELP market_risk_http_requests_total HTTP requests handled by the API.",
+        "# TYPE market_risk_http_requests_total counter",
+    ]
+    for (method, path, status), count in sorted(REQUEST_COUNTS.items()):
+        lines.append(
+            f'market_risk_http_requests_total{{method="{method}",path="{path}",status="{status}"}} {count}'
+        )
+    lines.extend(
         [
-            "# HELP market_risk_platform_up API process health.",
-            "# TYPE market_risk_platform_up gauge",
-            "market_risk_platform_up 1",
             "# HELP quant_risk_last_success_timestamp_seconds Last successful sample risk calculation.",
             "# TYPE quant_risk_last_success_timestamp_seconds gauge",
             f"quant_risk_last_success_timestamp_seconds {int(START_TIME)}",
             "",
         ]
     )
+    body = "\n".join(lines)
     return Response(content=body, media_type="text/plain")
 
 
