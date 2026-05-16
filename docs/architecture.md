@@ -2,7 +2,7 @@
 
 ## System Goal
 
-Provide a compact but production-shaped platform for market-risk workloads. The service calculates sample FX option Greeks and portfolio risk statistics, then exposes the results through an HTTP API and CLI.
+Provide a deployable service for market-risk workloads. The service calculates sample FX option Greeks and portfolio risk statistics, then exposes the results through an HTTP API and CLI.
 
 ## Components
 
@@ -30,4 +30,3 @@ Sample market inputs
 - Run the API on ECS, EKS, or an autoscaling group behind an ALB.
 - Add OpenTelemetry traces and structured JSON logs.
 - Add policy-as-code checks with Checkov, tfsec, or OPA.
-

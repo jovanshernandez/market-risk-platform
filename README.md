@@ -137,4 +137,4 @@ The production environment includes an S3/DynamoDB remote-state pattern with pla
 
 ## Financial-Services Context
 
-Market-risk workloads require reproducible calculations, controlled releases, auditable infrastructure changes, and clear operational visibility. This project focuses on those platform concerns around a small pricing and portfolio-risk service.
+Market-risk workloads require reproducible calculations, controlled releases, auditable infrastructure changes, and clear operational visibility.

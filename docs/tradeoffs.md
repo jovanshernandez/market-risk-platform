@@ -11,7 +11,3 @@ The project avoids live market-data dependencies by default so tests are repeata
 ## Jenkins
 
 Jenkins is included because many financial-services firms still operate Jenkins at scale. The same workflow can be translated to GitHub Actions, GitLab CI, or Buildkite.
-
-## Quant Scope
-
-The project is not trying to be a full pricing library. The goal is to show that platform engineering practices can be applied to financial workloads where reproducibility, controls, and operational visibility matter.
