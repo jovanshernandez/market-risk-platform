@@ -137,6 +137,7 @@ Open:
 - API docs: `http://127.0.0.1:8000/docs`
 - Prometheus: `http://127.0.0.1:9090`
 - Grafana: `http://127.0.0.1:3000`
+- Grafana dashboard: `http://127.0.0.1:3000/d/market-risk-overview/market-risk-platform-overview`
 
 Grafana credentials:
 
@@ -197,6 +198,98 @@ grafana server \
   cfg:server.http_port=3000 \
   cfg:security.admin_user=admin \
   cfg:security.admin_password=admin
+```
+
+## Observability
+
+The local observability stack has three services:
+
+- **Market Risk API** runs the FastAPI service and exposes risk endpoints plus Prometheus metrics on `/metrics`.
+- **Prometheus** scrapes the API metrics endpoint and stores time-series data locally.
+- **Grafana** uses Prometheus as a datasource and renders the `Market Risk Platform Overview` dashboard.
+
+### Service URLs
+
+```text
+Market Risk API docs: http://127.0.0.1:8000/docs
+Prometheus:           http://127.0.0.1:9090
+Grafana:              http://127.0.0.1:3000
+Grafana dashboard:    http://127.0.0.1:3000/d/market-risk-overview/market-risk-platform-overview
+```
+
+Grafana login:
+
+```text
+admin / admin
+```
+
+### Metrics Exposed By The API
+
+The API exports these Prometheus metrics:
+
+- `market_risk_platform_up`: service health gauge.
+- `market_risk_http_requests_total`: request counter labeled by method, path, and status.
+- `market_risk_portfolio_beta`: beta by portfolio symbol.
+- `market_risk_portfolio_sharpe`: annualized Sharpe ratio.
+- `market_risk_portfolio_var_95_10d`: simulated 10-day 95% value at risk.
+- `market_risk_portfolio_expected_shortfall_95_10d`: simulated 10-day expected shortfall.
+- `market_risk_portfolio_mean_pnl`: simulated mean PnL.
+- `market_risk_fx_option_price`: FX option model price by symbol.
+- `market_risk_fx_option_delta`: FX option delta by symbol.
+- `market_risk_fx_option_vega`: FX option vega by symbol.
+- `market_risk_fx_option_notional_value`: notional model value by symbol.
+- `quant_risk_last_success_timestamp_seconds`: timestamp of the latest successful sample risk calculation.
+
+### Dashboard Panels
+
+The Grafana dashboard includes:
+
+- **API Availability**: whether Prometheus can scrape the API.
+- **Annualized Sharpe**: portfolio risk-adjusted return metric from the sample return series.
+- **10D 95% VaR**: estimated portfolio loss threshold over a 10-day horizon at 95% confidence.
+- **Expected Shortfall**: average loss beyond the VaR threshold.
+- **Request Rate by Path**: request throughput grouped by API route.
+- **Portfolio Beta**: beta values for AAPL, MSFT, and XLK against the benchmark series.
+- **FX Option Notional Value**: modeled notional value for the sample EURUSD, USDJPY, and GBPUSD positions.
+- **FX Option Delta**: directional exposure by FX option.
+- **FX Option Vega**: volatility exposure by FX option.
+- **FX Option Price**: model price by FX option.
+- **Risk Data Freshness**: seconds since the latest successful sample risk calculation.
+
+### Useful Prometheus Queries
+
+Use the Prometheus expression browser at `http://127.0.0.1:9090`:
+
+```promql
+up{job="market-risk-api"}
+```
+
+```promql
+sum by (path) (rate(market_risk_http_requests_total[5m]))
+```
+
+```promql
+market_risk_portfolio_beta
+```
+
+```promql
+market_risk_portfolio_var_95_10d
+```
+
+```promql
+market_risk_fx_option_notional_value
+```
+
+```promql
+time() - quant_risk_last_success_timestamp_seconds
+```
+
+Generate API traffic before viewing request-rate graphs:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/risk/fx-options
+curl http://127.0.0.1:8000/risk/portfolio
 ```
 
 ## Terraform Validation
