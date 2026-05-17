@@ -2,7 +2,7 @@
 
 Market-risk service with local risk calculations, API access, infrastructure code, and deployment controls.
 
-The repository is organized around a small risk workload and the surrounding platform pieces needed to build, test, deploy, and operate it. The application exposes FX option risk and portfolio-risk calculations through both a CLI and FastAPI service. The infrastructure and CI files show how the service would be packaged, validated, and promoted through controlled environments.
+The repository is organized around a small risk workload and the surrounding platform pieces needed to build, test, deploy, and operate it. The application exposes FX option risk and portfolio-risk calculations through both a CLI and FastAPI service. Docker Compose provides the local runtime; Terraform and Jenkins document how the service would move through infrastructure provisioning and controlled delivery.
 
 ## Project Scope
 
@@ -292,6 +292,16 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/risk/fx-options
 curl http://127.0.0.1:8000/risk/portfolio
 ```
+
+## Deployment And Change Control
+
+Terraform and Jenkins are included to show the path from a local service to a managed environment. They are not required to run the local Docker Compose stack.
+
+- **Terraform** defines the AWS-facing infrastructure boundary: VPC, subnet, route table, security group, and API host. The repo keeps separate `dev` and `prod` environment definitions so infrastructure changes can be reviewed before promotion.
+- **Jenkins** models the CI/CD control plane: run application tests, build the container image, validate Terraform, capture a plan artifact, and require approval before production changes.
+- **Docker Compose** remains the recommended local workflow. Terraform and Jenkins represent the deployment and change-management layer around the same service.
+
+This separation keeps local development fast while preserving the release controls expected for risk and market-data workloads.
 
 ## Terraform Validation
 
