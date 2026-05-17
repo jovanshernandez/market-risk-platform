@@ -52,6 +52,7 @@ observability/
   grafana/
 docs/
   architecture.md
+  observability.md
   runbook.md
   security.md
   tradeoffs.md
@@ -210,6 +211,8 @@ The local observability stack has three services:
 - **Market Risk API** runs the FastAPI service and exposes risk endpoints plus Prometheus metrics on `/metrics`.
 - **Prometheus** scrapes the API metrics endpoint and stores time-series data locally.
 - **Grafana** uses Prometheus as a datasource and renders the `Market Risk Platform Overview` dashboard.
+
+Detailed metric and dashboard documentation lives in [docs/observability.md](docs/observability.md).
 
 ### Service URLs
 
