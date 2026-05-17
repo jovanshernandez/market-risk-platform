@@ -128,6 +128,16 @@ uvicorn market_risk_platform.api:app --reload --host 127.0.0.1 --port 8000
 
 The local Docker Compose stack starts the API, Prometheus, and Grafana together.
 
+Prerequisites:
+
+- Docker Desktop, or
+- Docker CLI with Colima on macOS:
+
+```bash
+brew install docker docker-compose colima
+colima start --cpu 2 --memory 4 --disk 20
+```
+
 ```bash
 docker compose up --build
 ```
