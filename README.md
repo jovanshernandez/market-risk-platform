@@ -1,5 +1,7 @@
 # Market Risk Platform
 
+<img width="3403" height="2137" alt="image" src="https://github.com/user-attachments/assets/594c35b0-0b26-4f7b-9033-f33f40f47b9b" />
+
 Market-risk service with local risk calculations, API access, infrastructure code, and deployment controls.
 
 The repository is organized around a small risk workload and the surrounding platform pieces needed to build, test, deploy, and operate it. The application exposes FX option risk and portfolio-risk calculations through both a CLI and FastAPI service. Docker Compose provides the local runtime; Terraform and Jenkins document how the service would move through infrastructure provisioning and controlled delivery.
