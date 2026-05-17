@@ -313,7 +313,3 @@ terraform plan -var='ami_id=ami-0123456789abcdef0'
 ```
 
 The production environment includes an S3/DynamoDB remote-state pattern with placeholder names. Replace those before using it in a real AWS account.
-
-## Financial-Services Context
-
-Market-risk workloads require reproducible calculations, controlled releases, auditable infrastructure changes, and clear operational visibility.
