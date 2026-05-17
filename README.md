@@ -55,9 +55,57 @@ docs/
   tradeoffs.md
 ```
 
-## Run Locally
+## Recommended Local Run
 
-The API can be run locally without AWS credentials.
+Docker Compose is the recommended local workflow. It starts the API, Prometheus, and Grafana with the same service wiring used by the repository's observability configuration.
+
+Prerequisites:
+
+- Docker Desktop, or
+- Docker CLI with Colima on macOS:
+
+```bash
+brew install docker docker-compose colima
+colima start --cpu 2 --memory 4 --disk 20
+```
+
+Start the stack:
+
+```bash
+docker compose up --build
+```
+
+Open:
+
+- API docs: `http://127.0.0.1:8000/docs`
+- Prometheus: `http://127.0.0.1:9090`
+- Grafana: `http://127.0.0.1:3000`
+- Grafana dashboard: `http://127.0.0.1:3000/d/market-risk-overview/market-risk-platform-overview`
+
+Grafana credentials:
+
+```text
+username: admin
+password: admin
+```
+
+Generate API traffic before checking request-rate panels:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/risk/fx-options
+curl http://127.0.0.1:8000/risk/portfolio
+```
+
+Stop the stack:
+
+```bash
+docker compose down
+```
+
+## API Development
+
+Run the Python service directly when working on application code or tests without the observability stack.
 
 ### 1. Create a virtual environment
 
@@ -92,7 +140,7 @@ python -m market_risk_platform.cli fx-options
 python -m market_risk_platform.cli portfolio
 ```
 
-### 5. Start the FastAPI server
+### 5. Start only the FastAPI server
 
 ```bash
 uvicorn market_risk_platform.api:app --reload --host 127.0.0.1 --port 8000
@@ -113,66 +161,9 @@ Useful endpoints:
 
 Stop the server with `Ctrl+C`.
 
-## Local Workflow Summary
+## Native Observability Fallback
 
-```bash
-cd app
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pytest -q
-uvicorn market_risk_platform.api:app --reload --host 127.0.0.1 --port 8000
-```
-
-## Run Observability Stack
-
-The local Docker Compose stack starts the API, Prometheus, and Grafana together.
-
-Prerequisites:
-
-- Docker Desktop, or
-- Docker CLI with Colima on macOS:
-
-```bash
-brew install docker docker-compose colima
-colima start --cpu 2 --memory 4 --disk 20
-```
-
-```bash
-docker compose up --build
-```
-
-Open:
-
-- API docs: `http://127.0.0.1:8000/docs`
-- Prometheus: `http://127.0.0.1:9090`
-- Grafana: `http://127.0.0.1:3000`
-- Grafana dashboard: `http://127.0.0.1:3000/d/market-risk-overview/market-risk-platform-overview`
-
-Grafana credentials:
-
-```text
-username: admin
-password: admin
-```
-
-The Grafana datasource and `Market Risk Platform Overview` dashboard are provisioned automatically. Generate a little traffic before checking the request-rate panel:
-
-```bash
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/risk/fx-options
-curl http://127.0.0.1:8000/risk/portfolio
-```
-
-Stop the stack:
-
-```bash
-docker compose down
-```
-
-### Native macOS Run
-
-If Docker is not installed, run the services directly with Homebrew:
+The native macOS configs are included for environments where Docker is unavailable. Docker Compose should be used when possible.
 
 ```bash
 brew install prometheus grafana
