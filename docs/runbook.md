@@ -8,6 +8,13 @@
 4. Check EC2 security group rules for port `8000`.
 5. Roll back to the previous image if the failure followed a deployment.
 
+## Readiness Check Fails
+
+1. Check `/ready` and confirm which dependency check is failing.
+2. Compare CLI output against the API for the same pricing or portfolio workload.
+3. Re-run unit tests for the affected module before promoting the build.
+4. Hold traffic routing until readiness returns `ready`.
+
 ## Risk Endpoint Returns Unexpected Results
 
 1. Re-run unit tests for pricing and portfolio modules.

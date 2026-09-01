@@ -10,6 +10,7 @@ The repository is organized around a small risk workload and the surrounding pla
 
 - Python package for pricing and portfolio-risk calculations
 - FastAPI endpoints for health, metrics, FX option risk, and portfolio risk
+- Readiness endpoint for deployment and monitoring gates
 - CLI entry points for running the same workloads locally
 - Unit tests covering the pricing and portfolio modules
 - Dockerfile for packaging the API service
@@ -50,11 +51,13 @@ infra/
 observability/
   prometheus/
   grafana/
-docs/
+  docs/
   architecture.md
   observability.md
+  platform.md
   runbook.md
   security.md
+  sre.md
   tradeoffs.md
 ```
 
@@ -158,6 +161,7 @@ http://127.0.0.1:8000/docs
 Useful endpoints:
 
 - `GET /health`
+- `GET /ready`
 - `GET /metrics`
 - `GET /risk/fx-options`
 - `GET /risk/portfolio`

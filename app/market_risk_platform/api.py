@@ -32,6 +32,20 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/ready")
+def ready() -> dict[str, object]:
+    """Run lightweight dependency checks used by deployment and monitoring gates."""
+    portfolio = build_portfolio_risk()
+    fx_results = [price_fx_option(position) for position in FX_POSITIONS]
+    return {
+        "status": "ready",
+        "checks": {
+            "portfolio_risk": bool(portfolio.get("var_95_10d")),
+            "fx_option_risk": len(fx_results) == len(FX_POSITIONS),
+        },
+    }
+
+
 @app.get("/metrics")
 def metrics() -> Response:
     portfolio = build_portfolio_risk()
