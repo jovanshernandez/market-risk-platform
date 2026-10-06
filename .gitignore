@@ -9,3 +9,7 @@ tfplan.txt
 dist/
 build/
 .DS_Store
+infra/terraform/modules/**/.terraform.lock.hcl
+*.egg-info/
+.coverage
+htmlcov/

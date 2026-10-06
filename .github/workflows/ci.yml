@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App tests (Python 3.12)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: app/requirements*.txt
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest -q
+      - name: CLI smoke test
+        run: |
+          python -m market_risk_platform.cli fx-options
+          python -m market_risk_platform.cli portfolio --json
+
+  terraform:
+    name: Terraform fmt, validate, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "~1.16.0"
+          terraform_wrapper: false
+      - name: fmt
+        run: terraform fmt -check -recursive infra/terraform
+      - name: validate dev
+        working-directory: infra/terraform/environments/dev
+        run: terraform init -backend=false -input=false && terraform validate
+      - name: validate prod
+        working-directory: infra/terraform/environments/prod
+        run: terraform init -backend=false -input=false && terraform validate
+      - name: test service module (mocked AWS provider)
+        working-directory: infra/terraform/modules/service
+        run: terraform init -input=false && terraform test

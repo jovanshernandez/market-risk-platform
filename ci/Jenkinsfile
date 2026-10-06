@@ -8,6 +8,10 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '30'))
   }
 
+  parameters {
+    string(name: 'AMI_ID', defaultValue: 'ami-0123456789abcdef0', description: 'AMI for the dev plan')
+  }
+
   environment {
     IMAGE_NAME       = 'market-risk-platform'
     TF_IN_AUTOMATION = 'true'
@@ -19,7 +23,7 @@ pipeline {
         dir('app') {
           sh 'python3 -m venv .venv'
           sh '.venv/bin/python -m pip install --upgrade pip'
-          sh '.venv/bin/python -m pip install -r requirements.txt'
+          sh '.venv/bin/python -m pip install -r requirements-dev.txt'
           sh '.venv/bin/python -m pytest -q'
         }
       }
@@ -39,7 +43,7 @@ pipeline {
               sh 'terraform fmt -check -recursive ../../..'
               sh 'terraform init -backend=false -input=false'
               sh 'terraform validate'
-              sh 'terraform plan -input=false -out=tfplan'
+              sh "terraform plan -input=false -out=tfplan -var='ami_id=${params.AMI_ID}' -var='container_image=${IMAGE_NAME}:${BUILD_NUMBER}'"
               sh 'terraform show -no-color tfplan > tfplan.txt'
             }
           }
@@ -55,6 +59,15 @@ pipeline {
             dir('infra/terraform/environments/prod') {
               sh 'terraform init -backend=false -input=false'
               sh 'terraform validate'
+            }
+          }
+        }
+
+        stage('module tests') {
+          steps {
+            dir('infra/terraform/modules/service') {
+              sh 'terraform init -input=false'
+              sh 'terraform test'
             }
           }
         }
