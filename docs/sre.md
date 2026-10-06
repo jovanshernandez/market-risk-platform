@@ -5,7 +5,7 @@
 - API availability: 99.9% monthly for `/health`.
 - Readiness: `/ready` succeeds before traffic is routed to a freshly deployed service.
 - Risk freshness: sample risk output updated within expected job interval.
-- API latency: 95% of risk API requests complete within 500 ms for cached/sample workloads.
+- API latency: 95% of risk API requests complete within 500 ms for cached/sample workloads, measured from `market_risk_http_request_duration_seconds`.
 
 ## Alerts
 

@@ -10,7 +10,7 @@
 
 ## Readiness Check Fails
 
-1. Check `/ready` and confirm which dependency check is failing.
+1. Check `/ready` (it returns HTTP 503 when not ready) and confirm which check is failing.
 2. Compare CLI output against the API for the same pricing or portfolio workload.
 3. Re-run unit tests for the affected module before promoting the build.
 4. Hold traffic routing until readiness returns `ready`.

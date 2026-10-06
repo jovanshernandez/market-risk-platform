@@ -191,7 +191,7 @@
             "uid": "prometheus"
           },
           "expr": "market_risk_fx_option_notional_value",
-          "legendFormat": "{{symbol}}"
+          "legendFormat": "{{symbol}} ({{currency}})"
         }
       ],
       "fieldConfig": {
@@ -280,7 +280,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "time() - quant_risk_last_success_timestamp_seconds"
+          "expr": "time() - market_risk_last_success_timestamp_seconds"
         }
       ],
       "fieldConfig": {
@@ -289,6 +289,60 @@
         },
         "overrides": []
       }
+    },
+    {
+      "id": 12,
+      "title": "p95 Latency by Path",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, path) (rate(market_risk_http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{path}}"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "5xx Error Ratio",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(market_risk_http_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(market_risk_http_requests_total[5m])), 1e-9)",
+          "legendFormat": "5xx ratio"
+        }
+      ]
     }
   ]
 }

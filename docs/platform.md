@@ -3,7 +3,8 @@
 ## Platform Capabilities
 
 - Local Docker Compose stack for API, Prometheus, and Grafana.
-- Reusable Terraform service module with separate dev and prod environment definitions.
+- Reusable Terraform service module with separate dev and prod environment definitions, covered by `terraform test` against a mocked AWS provider.
+- GitHub Actions CI for Python tests and Terraform checks.
 - Jenkins pipeline stages for tests, image build, Terraform validation, plan capture, and gated production apply.
 - CLI and API entry points backed by the same pricing and portfolio-risk modules.
 - Operational documentation for architecture, observability, runbooks, security, tradeoffs, and SRE concerns.

@@ -2,10 +2,12 @@
 
 - EC2 metadata requires IMDSv2.
 - EBS root volumes are encrypted.
-- SSH ingress is disabled by default unless CIDR blocks are explicitly supplied.
+- SSH and API ingress are both closed by default; each opens only to CIDR blocks passed in explicitly.
+- The container runs as a non-root user.
+- The host runs a pinned `container_image` (registry path plus git SHA tag) rather than `latest`.
 - Production Terraform uses a remote-state pattern with encryption and DynamoDB locking.
 - Secrets are not stored in the repository.
-- The API currently exposes sample deterministic risk data only.
+- The API currently exposes sample deterministic risk data only. Request bodies are validated by pydantic, and the Monte Carlo endpoint caps simulations x horizon so one request can't monopolize the worker.
 
 ## Financial-Services Controls To Add Next
 

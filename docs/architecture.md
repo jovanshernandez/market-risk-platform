@@ -6,12 +6,12 @@ Provide a deployable service for market-risk workloads. The service calculates s
 
 ## Components
 
-- **Risk API**: FastAPI service with health, metrics, FX option risk, and portfolio risk endpoints.
-- **Risk Library**: Pure Python pricing and portfolio modules that can be tested independently from the web layer.
+- **Risk API**: FastAPI service with health, readiness, metrics, FX option risk, and portfolio risk endpoints. Requests and responses are pydantic models, so inputs are validated and documented in the OpenAPI schema.
+- **Risk Library**: Pure Python pricing (`pricing.py`) and portfolio (`portfolio.py`) modules that can be tested independently from the web layer. `risk.py` wires them into the workloads the API and CLI share.
 - **Container**: Docker image for repeatable runtime packaging.
 - **Terraform**: AWS VPC, public subnet, route table, security group, and EC2 API host.
-- **CI/CD**: Jenkins pipeline that runs tests, builds the image, validates infrastructure, archives a plan, and gates production changes.
-- **Observability**: Prometheus scrape config and Grafana dashboard starter.
+- **CI/CD**: GitHub Actions runs the Python tests and Terraform fmt / validate / test on every push. The Jenkins pipeline models the fuller delivery path: tests, image build, Terraform plan archive, and a manual production gate.
+- **Observability**: Prometheus scrape config and a provisioned Grafana dashboard.
 
 ## Data Flow
 
