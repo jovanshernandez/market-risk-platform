@@ -70,12 +70,15 @@ resource "aws_security_group" "api" {
   description = "Ingress policy for the market-risk API"
   vpc_id      = aws_vpc.this.id
 
-  ingress {
-    description = "HTTP API"
-    from_port   = 8000
-    to_port     = 8000
-    protocol    = "tcp"
-    cidr_blocks = var.http_cidr_blocks
+  dynamic "ingress" {
+    for_each = length(var.http_cidr_blocks) > 0 ? [1] : []
+    content {
+      description = "HTTP API"
+      from_port   = 8000
+      to_port     = 8000
+      protocol    = "tcp"
+      cidr_blocks = var.http_cidr_blocks
+    }
   }
 
   dynamic "ingress" {
@@ -126,7 +129,7 @@ resource "aws_instance" "api" {
     yum update -y
     yum install -y docker
     systemctl enable --now docker
-    docker run --restart unless-stopped -p 8000:8000 ${var.project}:latest
+    docker run -d --restart unless-stopped -p 8000:8000 ${var.container_image}
   USERDATA
 
   tags = merge(local.tags, {

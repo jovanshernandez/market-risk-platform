@@ -9,6 +9,11 @@ variable "ami_id" {
   type        = string
 }
 
+variable "container_image" {
+  description = "Container image to run, pinned to a git SHA tag."
+  type        = string
+}
+
 variable "ssh_cidr_blocks" {
   description = "CIDR blocks allowed to reach SSH."
   type        = list(string)

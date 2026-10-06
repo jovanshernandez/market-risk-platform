@@ -8,19 +8,24 @@ variable "environment" {
   type        = string
 }
 
-variable "aws_region" {
-  description = "AWS region for deployment."
-  type        = string
-}
-
 variable "vpc_cidr" {
   description = "CIDR block for the service VPC."
   type        = string
+
+  validation {
+    condition     = can(cidrhost(var.vpc_cidr, 0))
+    error_message = "vpc_cidr must be a valid IPv4 CIDR block."
+  }
 }
 
 variable "public_subnet_cidr" {
-  description = "CIDR block for the public subnet."
+  description = "CIDR block for the public subnet. Must sit inside vpc_cidr."
   type        = string
+
+  validation {
+    condition     = can(cidrhost(var.public_subnet_cidr, 0))
+    error_message = "public_subnet_cidr must be a valid IPv4 CIDR block."
+  }
 }
 
 variable "instance_type" {
@@ -37,6 +42,16 @@ variable "instance_type" {
 variable "ami_id" {
   description = "AMI ID for the API host."
   type        = string
+
+  validation {
+    condition     = can(regex("^ami-[0-9a-f]{8,17}$", var.ami_id))
+    error_message = "ami_id must look like ami-0123456789abcdef0."
+  }
+}
+
+variable "container_image" {
+  description = "Container image the host runs, e.g. <account>.dkr.ecr.<region>.amazonaws.com/market-risk-platform:<git-sha>."
+  type        = string
 }
 
 variable "ssh_cidr_blocks" {
@@ -46,9 +61,9 @@ variable "ssh_cidr_blocks" {
 }
 
 variable "http_cidr_blocks" {
-  description = "CIDR blocks allowed to reach the API."
+  description = "CIDR blocks allowed to reach the API on port 8000. Empty means no API ingress."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = []
 }
 
 variable "tags" {

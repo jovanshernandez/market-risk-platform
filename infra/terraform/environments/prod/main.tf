@@ -26,10 +26,10 @@ module "market_risk_service" {
 
   project            = "market-risk-platform"
   environment        = "prod"
-  aws_region         = var.aws_region
   vpc_cidr           = "10.50.0.0/16"
   public_subnet_cidr = "10.50.1.0/24"
   ami_id             = var.ami_id
+  container_image    = var.container_image
   instance_type      = "t3.small"
   ssh_cidr_blocks    = var.ssh_cidr_blocks
   http_cidr_blocks   = var.http_cidr_blocks
