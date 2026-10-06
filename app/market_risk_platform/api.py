@@ -1,136 +1,119 @@
+"""FastAPI service exposing FX option and portfolio risk, health checks, and Prometheus metrics."""
+
 from __future__ import annotations
 
+import math
 import time
-from collections import Counter
-from typing import Any
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Body, FastAPI, Request, Response
+from fastapi.responses import JSONResponse
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from starlette.routing import Match
 
-from market_risk_platform.cli import build_portfolio_risk
-from market_risk_platform.pricing import price_fx_option
-from market_risk_platform.sample_data import FX_POSITIONS
+from market_risk_platform import __version__
+from market_risk_platform.metrics import REGISTRY, observe_request, refresh_risk_metrics
+from market_risk_platform.risk import fx_option_risk, portfolio_risk, sample_portfolio_risk
+from market_risk_platform.schemas import (
+    FxOptionRequest,
+    FxOptionRisk,
+    Health,
+    PortfolioRisk,
+    PortfolioRiskRequest,
+    Readiness,
+)
 
 app = FastAPI(
     title="Market Risk Platform",
-    description="Production-style API for market data and portfolio risk workloads.",
-    version="0.1.0",
+    description=(
+        "FX option pricing (Garman-Kohlhagen) and portfolio risk (beta, Sharpe, Monte Carlo VaR "
+        "and expected shortfall), with health, readiness and Prometheus metrics endpoints."
+    ),
+    version=__version__,
+    openapi_tags=[
+        {"name": "risk", "description": "Pricing and portfolio risk calculations."},
+        {"name": "ops", "description": "Health, readiness and metrics for deploy gates and monitoring."},
+    ],
 )
-
-START_TIME = time.time()
-REQUEST_COUNTS: Counter[tuple[str, str, int]] = Counter()
 
 
 @app.middleware("http")
-async def count_requests(request: Request, call_next):
-    response = await call_next(request)
-    REQUEST_COUNTS[(request.method, request.url.path, response.status_code)] += 1
-    return response
+async def record_request_metrics(request: Request, call_next):
+    started = time.perf_counter()
+    status = 500
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        return response
+    finally:
+        observe_request(request.method, _route_template(request), status, time.perf_counter() - started)
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def _route_template(request: Request) -> str:
+    """Label requests by route template, not raw URL, so unknown paths can't explode label cardinality."""
+    route = request.scope.get("route")
+    if route is not None:
+        return route.path
+    # Plain Starlette routes (/docs, /openapi.json) don't record themselves in the scope.
+    for candidate in request.app.router.routes:
+        match, _ = candidate.matches(request.scope)
+        if match == Match.FULL:
+            return getattr(candidate, "path", "unmatched")
+    return "unmatched"
 
 
-@app.get("/ready")
-def ready() -> dict[str, object]:
-    """Run lightweight dependency checks used by deployment and monitoring gates."""
-    portfolio = build_portfolio_risk()
-    fx_results = [price_fx_option(position) for position in FX_POSITIONS]
-    return {
-        "status": "ready",
-        "checks": {
-            "portfolio_risk": bool(portfolio.get("var_95_10d")),
-            "fx_option_risk": len(fx_results) == len(FX_POSITIONS),
-        },
-    }
+@app.get("/health", response_model=Health, tags=["ops"], summary="Liveness check")
+def health() -> Health:
+    """Liveness: the process is up and serving requests."""
+    return Health()
 
 
-@app.get("/metrics")
+@app.get("/ready", response_model=Readiness, tags=["ops"], summary="Readiness check", responses={503: {"model": Readiness}})
+def ready() -> Response | Readiness:
+    """Readiness: run the sample risk workloads and check the results are usable."""
+    try:
+        portfolio = sample_portfolio_risk()
+        options = fx_option_risk()
+        checks = {
+            "portfolio_risk": math.isfinite(portfolio.var.value_at_risk) and portfolio.var.value_at_risk > 0,
+            "fx_option_risk": len(options) > 0 and all(math.isfinite(option.price) for option in options),
+        }
+    except Exception:
+        checks = {"portfolio_risk": False, "fx_option_risk": False}
+
+    readiness = Readiness(status="ready" if all(checks.values()) else "not_ready", checks=checks)
+    if readiness.status != "ready":
+        return JSONResponse(status_code=503, content=readiness.model_dump())
+    return readiness
+
+
+@app.get("/metrics", tags=["ops"], response_class=Response, summary="Prometheus metrics")
 def metrics() -> Response:
-    portfolio = build_portfolio_risk()
-    fx_results = [price_fx_option(position) for position in FX_POSITIONS]
-
-    lines = [
-        "# HELP market_risk_platform_up API process health.",
-        "# TYPE market_risk_platform_up gauge",
-        "market_risk_platform_up 1",
-        "# HELP market_risk_http_requests_total HTTP requests handled by the API.",
-        "# TYPE market_risk_http_requests_total counter",
-    ]
-    for (method, path, status), count in sorted(REQUEST_COUNTS.items()):
-        lines.append(
-            f'market_risk_http_requests_total{{method="{method}",path="{path}",status="{status}"}} {count}'
-        )
-    lines.extend(
-        [
-            "# HELP market_risk_portfolio_beta Portfolio beta by symbol.",
-            "# TYPE market_risk_portfolio_beta gauge",
-        ]
-    )
-    for symbol, beta in portfolio["betas"].items():
-        lines.append(f'market_risk_portfolio_beta{{symbol="{symbol}"}} {beta}')
-    lines.extend(
-        [
-            "# HELP market_risk_portfolio_sharpe Annualized portfolio Sharpe ratio.",
-            "# TYPE market_risk_portfolio_sharpe gauge",
-            f"market_risk_portfolio_sharpe {portfolio['sharpe']}",
-            "# HELP market_risk_portfolio_var_95_10d Portfolio 95 percent 10 day value at risk.",
-            "# TYPE market_risk_portfolio_var_95_10d gauge",
-            f"market_risk_portfolio_var_95_10d {portfolio['var_95_10d']['value_at_risk']}",
-            "# HELP market_risk_portfolio_expected_shortfall_95_10d Portfolio 95 percent 10 day expected shortfall.",
-            "# TYPE market_risk_portfolio_expected_shortfall_95_10d gauge",
-            f"market_risk_portfolio_expected_shortfall_95_10d {portfolio['var_95_10d']['expected_shortfall']}",
-            "# HELP market_risk_portfolio_mean_pnl Simulated mean portfolio PnL.",
-            "# TYPE market_risk_portfolio_mean_pnl gauge",
-            f"market_risk_portfolio_mean_pnl {portfolio['var_95_10d']['mean_pnl']}",
-            "# HELP market_risk_fx_option_price FX option model price by symbol.",
-            "# TYPE market_risk_fx_option_price gauge",
-        ]
-    )
-    for result in fx_results:
-        lines.append(f'market_risk_fx_option_price{{symbol="{result.symbol}"}} {result.price}')
-    lines.extend(
-        [
-            "# HELP market_risk_fx_option_delta FX option delta by symbol.",
-            "# TYPE market_risk_fx_option_delta gauge",
-        ]
-    )
-    for result in fx_results:
-        lines.append(f'market_risk_fx_option_delta{{symbol="{result.symbol}"}} {result.delta}')
-    lines.extend(
-        [
-            "# HELP market_risk_fx_option_vega FX option vega by symbol.",
-            "# TYPE market_risk_fx_option_vega gauge",
-        ]
-    )
-    for result in fx_results:
-        lines.append(f'market_risk_fx_option_vega{{symbol="{result.symbol}"}} {result.vega}')
-    lines.extend(
-        [
-            "# HELP market_risk_fx_option_notional_value FX option notional model value by symbol.",
-            "# TYPE market_risk_fx_option_notional_value gauge",
-        ]
-    )
-    for result in fx_results:
-        lines.append(f'market_risk_fx_option_notional_value{{symbol="{result.symbol}"}} {result.notional_value}')
-    lines.extend(
-        [
-            "# HELP quant_risk_last_success_timestamp_seconds Last successful sample risk calculation.",
-            "# TYPE quant_risk_last_success_timestamp_seconds gauge",
-            f"quant_risk_last_success_timestamp_seconds {int(START_TIME)}",
-            "",
-        ]
-    )
-    body = "\n".join(lines)
-    return Response(content=body, media_type="text/plain")
+    """Prometheus exposition: request telemetry plus the sample book's risk numbers."""
+    refresh_risk_metrics()
+    return Response(content=generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
 
-@app.get("/risk/fx-options")
-def fx_option_risk() -> list[dict[str, Any]]:
-    return [price_fx_option(position).__dict__ for position in FX_POSITIONS]
+@app.get("/risk/fx-options", response_model=list[FxOptionRisk], tags=["risk"], summary="Sample FX option book")
+def sample_fx_option_risk() -> list[FxOptionRisk]:
+    """Price and Greeks for the bundled sample FX option book."""
+    return fx_option_risk()
 
 
-@app.get("/risk/portfolio")
-def portfolio_risk() -> dict[str, object]:
-    return build_portfolio_risk()
+@app.post("/risk/fx-options", response_model=list[FxOptionRisk], tags=["risk"], summary="Price FX options")
+def price_fx_options(
+    options: list[FxOptionRequest] = Body(min_length=1, max_length=500),
+) -> list[FxOptionRisk]:
+    """Price a list of European FX options with Garman-Kohlhagen."""
+    return fx_option_risk([option.to_position() for option in options])
+
+
+@app.get("/risk/portfolio", response_model=PortfolioRisk, tags=["risk"], summary="Sample portfolio risk")
+def sample_portfolio() -> PortfolioRisk:
+    """Beta, Sharpe and 10-day 95% Monte Carlo VaR for the bundled sample portfolio."""
+    return sample_portfolio_risk()
+
+
+@app.post("/risk/portfolio", response_model=PortfolioRisk, tags=["risk"], summary="Custom portfolio risk")
+def custom_portfolio(request: PortfolioRiskRequest) -> PortfolioRisk:
+    """Beta, Sharpe, VaR and expected shortfall for a portfolio you supply."""
+    return portfolio_risk(request)
